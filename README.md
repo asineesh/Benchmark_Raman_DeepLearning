@@ -16,18 +16,9 @@ The following models are benchmarked under consistent training and evaluation pr
 
 All models are implemented in **PyTorch**, and the pipeline supports dataset preprocessing, training, hyperparameter tuning, and evaluation using **test accuracy** and **macro-averaged F1 score**.
 
+## Setup Instructions
+Follow the steps below to reproduce the benchmarking experiments.
 
-Evaluation
+#1. Clone the Repository
+#2. 
 
-To compute test accuracy and macro-averaged F1 score:
-
-Navigate to:
-
-results/trained_models/
-
-
-Open the corresponding evaluation notebook
-
-Update the file paths to point to the trained model checkpoints
-
-Run the notebook to obtain final performance metrics
