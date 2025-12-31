@@ -42,4 +42,14 @@ Download it from https://github.com/csho33/bacteria-ID/blob/master/README.md and
 Download it from https://springernature.figshare.com/articles/dataset/Open-source_Raman_spectra_of_chemical_compounds_for_active_pharmaceutical_ingredient_development/27931131 and place it in the directory datasets/Pharma. <br> <br>
 Run the explore.ipynb notebook to generate the .pkl files for the train, validation and test splits of the dataset.
 
+## Training Models
+To train a model on a given dataset, execute the corresponding training module located in the results/ directory as a Python script. 
+During training: 
+<ul>
+  <li>Hyperparameter tuning is performed using the validation set.</li>
+  <li>The model achieving the best validation accuracy is saved to results/trained_models/ </li>
+</ul>
 
+## Evaluation 
+To compute test accuracy and macro F1 score, run the corresponding evaluation notebooks located in results/trained_models/. <br> <br>
+Ensure that the paths to the trained model checkpoints are updated appropriately before running the notebooks.
