@@ -2,17 +2,17 @@
 
 This repository provides a unified benchmarking framework for evaluating multiple deep learning–based Raman spectra classifiers on **three open-source Raman spectroscopy datasets**:
 
-- **MLROD**
-- **Bacteria-ID**
-- **API (Active Pharmaceutical Ingredients)**
+- **MLROD <sup> [1] </sup>**
+- **Bacteria-ID <sup> [2] </sup>**
+- **API (Active Pharmaceutical Ingredients) <sup> [3] </sup>**
 
 The following models are benchmarked under consistent training and evaluation protocols:
 
-- **Deep CNN** (referred to as `mlrod` in the codebase)
-- **SANet**
-- **RamanNet**
-- **Transformer**
-- **RamanFormer**
+- **Deep CNN <sup> [4] </sup>** (referred to as `mlrod` in the codebase)
+- **SANet <sup> [5] </sup>**
+- **RamanNet <sup> [6] </sup>**
+- **Transformer <sup> [7] </sup>**
+- **RamanFormer <sup> [8] </sup>**
 
 All models are implemented in **PyTorch**, and the pipeline supports dataset preprocessing, training, hyperparameter tuning, and evaluation using **test accuracy** and **macro-averaged F1 score**.
 
