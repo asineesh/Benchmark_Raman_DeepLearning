@@ -23,5 +23,4 @@ Follow the steps below to reproduce the benchmarking experiments.
 ```bash
 git clone <repository-url>
 cd <repository-name>
-
-aaa
+exit 0
