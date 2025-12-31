@@ -19,6 +19,8 @@ All models are implemented in **PyTorch**, and the pipeline supports dataset pre
 ## Setup Instructions
 Follow the steps below to reproduce the benchmarking experiments.
 
-# 1. Clone the Repository
-# 2. 
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd <repository-name>
 
