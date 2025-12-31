@@ -32,7 +32,7 @@ mkdir datasets/Bacteria_ID
 ```
 
 ### 3. Download the MLROD dataset
-Download it from https://odr.io/MLROD#/search/display/1348/eyJkdF9pZCI6IjYwMCJ9 and place it in the directory datasets/MLROD. <br> <br>
+Download it from https://odr.io/MLROD#/search/display/1348/eyJkdF9pZCI6IjYwMCJ9 and place it in the directory `datasets/MLROD/`. <br> <br>
 Run the `processing.ipynb` and `test_processing.ipynb` notebooks to generate .pkl files containing all the spectra interpolated to have a common spectral domain.
 
 ### 4. Download the Bacteria_ID dataset 
@@ -43,7 +43,7 @@ Download it from https://springernature.figshare.com/articles/dataset/Open-sourc
 Run the `explore.ipynb` notebook to generate the .pkl files for the train, validation and test splits of the dataset.
 
 ## Training Models
-To train a model on a given dataset, execute the corresponding training module located in the `results/ directory` as a Python script. 
+To train a model on a given dataset, execute the corresponding training module located in the `results/directory` as a Python script. 
 During training: 
 <ul>
   <li>Hyperparameter tuning is performed using the validation set.</li>
@@ -53,3 +53,15 @@ During training:
 ## Evaluation 
 To compute test accuracy and macro F1 score, run the corresponding evaluation notebooks located in `results/trained_models/`. <br> <br>
 Ensure that the paths to the trained model checkpoints are updated appropriately before running the notebooks.
+
+## Citations
+<ol>
+  <li>Berlanga, Genesis, Quentin Williams, and Nathan Temiquel. "Convolutional neural networks as a tool for Raman spectral mineral classification under low signal, dusty Mars conditions." Earth and Space Science 9.10 (2022): e2021EA002125.</li>
+  <li>Ho, Chi-Sing, et al. "Rapid identification of pathogenic bacteria using Raman spectroscopy and deep learning." Nature communications 10.1 (2019): 4927.</li>
+  <li>Flanagan, Aaron R., and Frank G. Glavin. "Open-source Raman spectra of chemical compounds for active pharmaceutical ingredient development." Scientific Data 12.1 (2025): 498.</li>
+  <li>Liu, Jinchao, et al. "Deep convolutional neural networks for Raman spectrum recognition: a unified solution." Analyst 142.21 (2017): 4067-4074.</li>
+  <li>Deng, Lin, et al. "Scale-adaptive deep model for bacterial raman spectra identification." IEEE Journal of Biomedical and Health Informatics 26.1 (2021): 369-378.</li>
+  <li>Ibtehaz, Nabil, et al. "RamanNet: a generalized neural network architecture for Raman spectrum analysis." Neural Computing and Applications 35.25 (2023): 18719-18735.</li>
+  <li>Liu, Bo, et al. "Classification of deep-sea cold seep bacteria by transformer combined with Raman spectroscopy." Scientific Reports 13.1 (2023): 3240.</li>
+  <li>Koyun, Onur Can, et al. "RamanFormer: A transformer-based quantification approach for Raman mixture components." ACS omega 9.22 (2024): 23241-23251.</li>
+</ol>
