@@ -32,4 +32,6 @@ mkdir datasets/Bacteria_ID
 ```
 
 ### 3. Download the MLROD dataset
-Download it from https://odr.io/MLROD#/search/display/1348/eyJkdF9pZCI6IjYwMCJ9 and place it in the directory datasets/MLROD
+Download it from https://odr.io/MLROD#/search/display/1348/eyJkdF9pZCI6IjYwMCJ9 and place it in the directory datasets/MLROD. <br>
+Run the processing.ipynb and test_processing.ipynb notebooks to generate .pkl files containing all the spectra interpolated to have a common spectral domain.
+
