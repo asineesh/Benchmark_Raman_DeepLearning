@@ -21,7 +21,15 @@ Follow the steps below to reproduce the benchmarking experiments.
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
-cd <repository-name>
+git clone https://github.com/asineesh/Benchmark_Raman_DeepLearning/
+cd Benchmark_Raman_DeepLearning
 ```
-a
+### 2. Create Required Directory Structure
+Create the following empty directories
+```bash
+mkdir results/Bacteria_ID/models
+mkdir datasets/Bacteria_ID
+```
+
+### 3. Download the MLROD dataset
+Download it from https://odr.io/MLROD#/search/display/1348/eyJkdF9pZCI6IjYwMCJ9 and place it in the directory datasets/MLROD
