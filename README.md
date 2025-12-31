@@ -47,7 +47,7 @@ To train a model on a given dataset, execute the corresponding training module l
 During training: 
 <ul>
   <li>Hyperparameter tuning is performed using the validation set.</li>
-  <li>The model achieving the best validation accuracy is saved to `results/trained_models/` </li>
+  <li>The model achieving the best validation accuracy is saved to `results/trained_models/` .</li>
 </ul>
 
 ## Evaluation 
