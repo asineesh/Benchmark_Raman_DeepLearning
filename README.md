@@ -45,10 +45,9 @@ Run the `explore.ipynb` notebook to generate the .pkl files for the train, valid
 ## Training Models
 To train a model on a given dataset, execute the corresponding training module located in the `results/` directory as a Python script. 
 During training: 
-<ul>
-  <li>Hyperparameter tuning is performed using the validation set.</li>
-  <li>The model achieving the best validation accuracy is saved to `results/trained_models/` .</li>
-</ul>
+* Hyperparameter tuning is performed using the validation set.
+* The model achieving the best validation accuracy is saved to `results/trained_models/`.
+
 
 ## Evaluation 
 To compute test accuracy and macro F1 score, run the corresponding evaluation notebooks located in `results/trained_models/`. <br> <br>
