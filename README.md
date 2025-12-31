@@ -43,7 +43,7 @@ Download it from https://springernature.figshare.com/articles/dataset/Open-sourc
 Run the `explore.ipynb` notebook to generate the .pkl files for the train, validation and test splits of the dataset.
 
 ## Training Models
-To train a model on a given dataset, execute the corresponding training module located in the `results/directory` as a Python script. 
+To train a model on a given dataset, execute the corresponding training module located in the `results/` directory as a Python script. 
 During training: 
 <ul>
   <li>Hyperparameter tuning is performed using the validation set.</li>
