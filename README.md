@@ -43,7 +43,12 @@ Download it from https://springernature.figshare.com/articles/dataset/Open-sourc
 Run the `explore.ipynb` notebook to generate the .pkl files for the train, validation and test splits of the dataset.
 
 ## Training Models
-To train a model on a given dataset, execute the corresponding training module located in the `results/` directory as a Python script. 
+To train a model on a given dataset, execute the corresponding training module located in the `results/` directory as a Python script. For example, to train the RamanNet model on the Bacteria ID dataset for the 30 category isolate classification problem, run the following from the root directory
+
+```bash
+python -m results.Bacteria_ID.thirty.train_RamanNet
+```
+
 During training: 
 * Hyperparameter tuning is performed using the validation set.
 * The model achieving the best validation accuracy is saved to `results/trained_models/`.
