@@ -49,7 +49,7 @@ To train a model on a given dataset, execute the corresponding training module l
 python -m results.Bacteria_ID.thirty.train_RamanNet
 ```
 
-During training: 
+During training, 
 * Hyperparameter tuning is performed using the validation set.
 * The model achieving the best validation accuracy is saved to `results/trained_models/`.
 
