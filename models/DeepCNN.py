@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class MLROD_model(nn.Module):
+class DeepCNN(nn.Module):
     def __init__(self,sp_size=1024,num_classes=15):
         super().__init__()
         self.conv1 = nn.Conv1d(1,16,21)

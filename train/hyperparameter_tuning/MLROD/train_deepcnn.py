@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torch.utils.data import Dataset,DataLoader,random_split
+from torch.utils.data import Dataset,DataLoader, random_split
 from torchvision import transforms
 
 from tqdm import tqdm
@@ -10,22 +10,21 @@ import random
 
 import numpy as np
 import matplotlib.pyplot as plt
-from models.SANet import ScaleAdaptiveNet
-import os
+from models.DeepCNN import DeepCNN
+import math
 from sklearn.metrics import precision_score, recall_score, f1_score
 import os
 import copy
-
 
 class MLROD_dataset(Dataset):
   def __init__(self,path):
     """
     path is a string containing the path to the pkl dataset
     """
-    super().__init__()   
+    super().__init__()
     self.y, self.X = pickle.load(open(path, 'rb'))
     self.y = list(self.y) #y is a list with containing the name of the chemical corresponding to X
-    self.X = list(self.X) #X is a list with each element of the list containing a 1024 time series data    
+    self.X = list(self.X) #X is a list with each element of the list containing a 1024 time series data
 
     #To remove the Unknown samples from the dataset
     i = 0
@@ -33,7 +32,7 @@ class MLROD_dataset(Dataset):
       if self.y[i]==15:
         self.y.pop(i)
         self.X.pop(i)
-      
+
       else:
         i+=1
 
@@ -42,7 +41,7 @@ class MLROD_dataset(Dataset):
 
   def __getitem__(self,index):
     data = torch.Tensor(self.X[index]) #of shape (1,1024)
-    data = data/data.max()
+    data = (data-data.min())/(data.max()-data.min())
     label = self.y[index]
     return data,label
 
@@ -86,7 +85,7 @@ def test(model,device,test_dataloader,criterion):
             loss = criterion(y_pred,y)
             total_loss += loss.item()
             loop.set_postfix(loss=total_loss/(i+1))
-    
+
     print(f'Classification accuracy: {round(100*correct/len(test_dataloader.dataset),2)}')
     return 100*correct/len(test_dataloader.dataset)
 
@@ -128,7 +127,11 @@ def test_f1(model,device,test_dataloader,criterion):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    filename = "results/MLROD/results_SANet.txt"
+    os.makedirs("results/hyperparameter_tuning/MLROD", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/trained_models/", exist_ok=True)
+    
+    filename = "results/hyperparameter_tuning/MLROD/results_deepcnn.txt"
+
     print(device)
 
     epochs = 40
@@ -141,10 +144,13 @@ def main():
     best_hyper = ""
     best_final_model_name = ""
 
+    generator = torch.manual_seed(42)
+    random.seed(42)
+
     for batch_size in batch_sizes:
         for lr in lrs:
             train_set = MLROD_dataset("datasets/MLROD/MLROD_train.pkl")
-            train_train_set, train_val_set = random_split(train_set,[0.8,0.2])
+            train_train_set, train_val_set = random_split(train_set,[0.8,0.2],generator=generator)
             test_set = MLROD_dataset("datasets/MLROD/MLROD_test.pkl")
 
             train_loader = DataLoader(train_train_set, batch_size=batch_size, num_workers=8, shuffle=True)
@@ -175,7 +181,7 @@ def main():
             with open(filename,"a", encoding="utf-8") as f:
                 f.write("\n"+iteration+"\n")
 
-            model = ScaleAdaptiveNet(num_classes=15).to(device)
+            model = DeepCNN().to(device)
             optimizer = torch.optim.Adam(model.parameters(),lr=lr)
             best_val_acc = 0
             best_test_acc = [[],[],[],[],[]]
@@ -208,14 +214,14 @@ def main():
                             os.remove(best_final_model_name)
 
                         #Saving the current model
-                        best_final_model_name = f"results/trained_models/MLROD_SANet_{epoch}_{round(acc,2)}_.pt"
+                        best_final_model_name = f"results/hyperparameter_tuning/trained_models/MLROD_deepcnn_{epoch}_{round(acc,2)}_.pt"
                         torch.save(model.state_dict(),best_final_model_name)
 
                     best_epoch = epoch
                     continue
 
                 if epoch-best_epoch>=stopping_epochs:
-                  break            
+                  break
 
     with open(filename,"a", encoding="utf-8") as f:
         f.write("For Granite 0\n")
@@ -254,4 +260,3 @@ def main():
 
 if __name__=="__main__":
     main()
-

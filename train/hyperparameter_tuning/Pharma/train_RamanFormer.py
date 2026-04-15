@@ -32,7 +32,7 @@ class Pharma_dataset(Dataset):
 
   def __getitem__(self,index):
     data = torch.Tensor(self.X[index]) #of shape (1,1024)
-    data = data/data.max()
+    data = (data-data.min())/(data.max()-data.min())
     label = self.mapping[self.y[index]]
     return data,label
 
@@ -108,9 +108,9 @@ def test_f1(model,device,test_dataloader,criterion):
     all_targets = torch.cat(all_targets).numpy() #of shape (num_samples,)
 
     accuracy = 100.0 * (all_preds == all_targets).mean()
-    precision = precision_score(all_targets, all_preds, average='weighted', zero_division=0)
-    recall = recall_score(all_targets, all_preds, average='weighted', zero_division=0)
-    f1 = f1_score(all_targets, all_preds, average='weighted', zero_division=0)
+    precision = precision_score(all_targets, all_preds, average='macro', zero_division=0)
+    recall = recall_score(all_targets, all_preds, average='macro', zero_division=0)
+    f1 = f1_score(all_targets, all_preds, average='macro', zero_division=0)
 
     print(f'Classification accuracy: {round(accuracy,2)}')
 
@@ -118,7 +118,11 @@ def test_f1(model,device,test_dataloader,criterion):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    filename = "results/Pharma/results_RamanFormer.txt"
+    os.makedirs("results/hyperparameter_tuning/Pharma", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/trained_models/", exist_ok=True)
+    
+    filename = "results/hyperparameter_tuning/Pharma/results_RamanFormer.txt"
+
     print(device)
 
     epochs = 40
@@ -131,11 +135,15 @@ def main():
     best_hyper = ""
     best_final_model_name = ""
 
+    generator = torch.manual_seed(42)
+    random.seed(42)
+
     for batch_size in batch_sizes:
         for lr in lrs:
-            train_set = Pharma_dataset("datasets/Pharma/Pharma_train.pkl")
-            val_set = Pharma_dataset("datasets/Pharma/Pharma_val.pkl")
+            all_train_set = Pharma_dataset("datasets/Pharma/Pharma_train.pkl")
             test_set = Pharma_dataset("datasets/Pharma/Pharma_test.pkl")
+
+            train_set, val_set = random_split(all_train_set,[0.8,0.2],generator=generator)
 
             train_loader = DataLoader(train_set, batch_size=batch_size, num_workers=8, shuffle=True)
             val_loader = DataLoader(val_set, batch_size=batch_size, num_workers=8, shuffle=True)
@@ -179,7 +187,7 @@ def main():
                             os.remove(best_final_model_name)
 
                         #Saving the current model
-                        best_final_model_name = f"results/trained_models/Pharma_RamanFormer_{epoch}_{round(acc,2)}_.pt"
+                        best_final_model_name = f"results/hyperparameter_tuning/trained_models/Pharma_RamanFormer_{epoch}_{round(acc,2)}_.pt"
                         torch.save(model.state_dict(),best_final_model_name)
                     
                     best_epoch = epoch

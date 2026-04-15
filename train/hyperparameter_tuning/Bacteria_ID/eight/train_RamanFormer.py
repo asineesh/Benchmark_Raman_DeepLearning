@@ -33,7 +33,7 @@ class Bacteria_Dataset(Dataset):
     
     def __getitem__(self,index):
         data = torch.Tensor(self.X[index]).unsqueeze(0) #of shape (1,1000)
-        data = data/(data.max())
+        data = (data-data.min())/(data.max()-data.min())
         label = self.y[index]
         if self.num_classes==8:
             label = ATCC_GROUPINGS[label]
@@ -121,7 +121,11 @@ def test_f1(model,device,test_dataloader,criterion):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    filename = "results/Bacteria_ID/eight/results_RamanFormer.txt"
+    os.makedirs("results/hyperparameter_tuning/Bacteria_ID/eight/", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/Bacteria_ID/models/", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/trained_models/", exist_ok=True)
+    
+    filename = "results/hyperparameter_tuning/Bacteria_ID/eight/results_RamanFormer.txt"
     print(device)
 
     epochs = 40
@@ -133,6 +137,8 @@ def main():
     all_best_test_acc = [0,0,0,0] #For test
     best_hyper = ""
     best_final_model_name = ""
+    generator = torch.manual_seed(42)
+    random.seed(42)
 
     for batch_size in batch_sizes:
         for lr in lrs:
@@ -140,8 +146,8 @@ def main():
             fine_set = Bacteria_Dataset("datasets/Bacteria_ID/X_finetune.npy","datasets/Bacteria_ID/y_finetune.npy",8)
             test_set = Bacteria_Dataset("datasets/Bacteria_ID/X_test.npy","datasets/Bacteria_ID/y_test.npy",8)
 
-            train_train_set, train_val_set = random_split(train_set,[0.8,0.2])
-            fine_train_set, fine_val_set = random_split(fine_set,[0.8,0.2])
+            train_train_set, train_val_set = random_split(train_set,[0.8,0.2],generator=generator)
+            fine_train_set, fine_val_set = random_split(fine_set,[0.8,0.2],generator=generator)
 
             train_train_loader = DataLoader(train_train_set, batch_size=batch_size, num_workers=8, shuffle=True)
             train_val_loader = DataLoader(train_val_set, batch_size=batch_size, num_workers=8, shuffle=True)
@@ -179,7 +185,7 @@ def main():
 
                     #Saving the current model
                     best_acc = acc
-                    best_model_name = f"results/Bacteria_ID/models/model_RamanFormer{epoch}_{round(acc,2)}_.pt"
+                    best_model_name = f"results/hyperparameter_tuning/Bacteria_ID/models/model_RamanFormer{epoch}_{round(acc,2)}_.pt"
                     torch.save(model.state_dict(),best_model_name)
                     best_epoch = epoch
                     continue
@@ -224,7 +230,7 @@ def main():
                             os.remove(best_final_model_name)
 
                         #Saving the current model
-                        best_final_model_name = f"results/trained_models/Bacteria_eight_RamanFormer_{epoch}_{round(acc,2)}_.pt"
+                        best_final_model_name = f"results/hyperparameter_tuning/trained_models/Bacteria_eight_RamanFormer_{epoch}_{round(acc,2)}_.pt"
                         torch.save(pretrained_model.state_dict(),best_final_model_name)
                     
                     best_epoch = epoch

@@ -10,32 +10,36 @@ import random
 
 import numpy as np
 import matplotlib.pyplot as plt
-from models.RamanNet import RamanNet
-from triplet_loss import TripletLoss
+from models.SANet import ScaleAdaptiveNet
 import os
+from datasets.Bacteria_ID.config import ATCC_GROUPINGS
 from sklearn.metrics import precision_score, recall_score, f1_score
 import copy
 
 class Bacteria_Dataset(Dataset):
-    def __init__(self,X_path,y_path):
+    def __init__(self,X_path,y_path,num_classes=30):
         """
         X_path is a string containing the path to the spectra
         y_path is a string containing the path to the labels for the spectra
+        num_classes is an integer corresponding to an 8 class or 30 class problem 
         """
         super().__init__()
         self.X = np.load(X_path)
         self.y = np.load(y_path)
+        self.num_classes = num_classes
     
     def __len__(self):
         return len(self.y)
     
     def __getitem__(self,index):
         data = torch.Tensor(self.X[index]).unsqueeze(0) #of shape (1,1000)
-        data = data/(data.max())
+        data = (data-data.min())/(data.max()-data.min())
         label = self.y[index]
+        if self.num_classes==8:
+            label = ATCC_GROUPINGS[label]
         return data,int(label)
 
-def train(model,device,train_dataloader,criterion1,criterion2,optimizer):
+def train(model,device,train_dataloader,criterion,optimizer):
     model.train()
     loop = tqdm(train_dataloader)
     total_loss = 0
@@ -45,16 +49,8 @@ def train(model,device,train_dataloader,criterion1,criterion2,optimizer):
         X = X.to(device)
         y = y.to(device)
 
-        y_pred,y_emb = model(X) #of shape (b,15)
-
-        #Applying cross-entropy loss
-        ce_loss = criterion1(y_pred,y)
-
-        #Applying triplet loss
-        tr_loss = criterion2(y_emb,y)
-
-        loss = 0.5*ce_loss+0.5*tr_loss
-
+        y_pred = model(X) #of shape (b,num_classes)
+        loss = criterion(y_pred,y)
         total_loss += loss.item()
         loop.set_postfix(loss=total_loss/(i+1))
 
@@ -76,7 +72,7 @@ def test(model,device,test_dataloader,criterion):
             X = X.to(device)
             y = y.to(device)
 
-            y_pred,_ = model(X) #of shape (b,15)
+            y_pred = model(X) #of shape (b,num_classes)
             prediction = y_pred.argmax(dim=1) #of shape (b)
             correct += sum(prediction==y).item()
 
@@ -100,7 +96,7 @@ def test_f1(model,device,test_dataloader,criterion):
             X = X.to(device)
             y = y.to(device)
 
-            y_pred,_ = model(X)#of shape (b,num_classes)                  
+            y_pred = model(X)#of shape (b,num_classes)                  
             preds = y_pred.argmax(dim=1) #of shape (b)
 
             all_preds.append(preds.cpu())
@@ -115,9 +111,9 @@ def test_f1(model,device,test_dataloader,criterion):
     all_targets = torch.cat(all_targets).numpy() #of shape (num_samples,)
 
     accuracy = 100.0 * (all_preds == all_targets).mean()
-    precision = precision_score(all_targets, all_preds, average='weighted', zero_division=0)
-    recall = recall_score(all_targets, all_preds, average='weighted', zero_division=0)
-    f1 = f1_score(all_targets, all_preds, average='weighted', zero_division=0)
+    precision = precision_score(all_targets, all_preds, average='macro', zero_division=0)
+    recall = recall_score(all_targets, all_preds, average='macro', zero_division=0)
+    f1 = f1_score(all_targets, all_preds, average='macro', zero_division=0)
 
     print(f'Classification accuracy: {round(accuracy,2)}')
 
@@ -125,29 +121,33 @@ def test_f1(model,device,test_dataloader,criterion):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    filename = "results/Bacteria_ID/thirty/results_RamanNet.txt"
+    os.makedirs("results/hyperparameter_tuning/Bacteria_ID/eight/", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/Bacteria_ID/models/", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/trained_models/", exist_ok=True)
+    
+    filename = "results/hyperparameter_tuning/Bacteria_ID/eight/results_SANet.txt"
     print(device)
 
     epochs = 40
     stopping_epochs = 10
-    criterion1 = nn.CrossEntropyLoss()
-    criterion2 = TripletLoss(device)
-
+    criterion = nn.CrossEntropyLoss()
     batch_sizes = [32,128,512]
     lrs = [0.001,0.0001,0.00001]
     all_best_val_acc = 0 #For validation
     all_best_test_acc = [0,0,0,0] #For test
     best_hyper = ""
     best_final_model_name = ""
+    generator = torch.manual_seed(42)
+    random.seed(42)
 
     for batch_size in batch_sizes:
         for lr in lrs:
-            train_set = Bacteria_Dataset("datasets/Bacteria_ID/X_reference.npy","datasets/Bacteria_ID/y_reference.npy")
-            fine_set = Bacteria_Dataset("datasets/Bacteria_ID/X_finetune.npy","datasets/Bacteria_ID/y_finetune.npy")
-            test_set = Bacteria_Dataset("datasets/Bacteria_ID/X_test.npy","datasets/Bacteria_ID/y_test.npy")
+            train_set = Bacteria_Dataset("datasets/Bacteria_ID/X_reference.npy","datasets/Bacteria_ID/y_reference.npy",8)
+            fine_set = Bacteria_Dataset("datasets/Bacteria_ID/X_finetune.npy","datasets/Bacteria_ID/y_finetune.npy",8)
+            test_set = Bacteria_Dataset("datasets/Bacteria_ID/X_test.npy","datasets/Bacteria_ID/y_test.npy",8)
 
-            train_train_set, train_val_set = random_split(train_set,[0.8,0.2])
-            fine_train_set, fine_val_set = random_split(fine_set,[0.8,0.2])
+            train_train_set, train_val_set = random_split(train_set,[0.8,0.2],generator=generator)
+            fine_train_set, fine_val_set = random_split(fine_set,[0.8,0.2],generator=generator)
 
             train_train_loader = DataLoader(train_train_set, batch_size=batch_size, num_workers=8, shuffle=True)
             train_val_loader = DataLoader(train_val_set, batch_size=batch_size, num_workers=8, shuffle=True)
@@ -162,7 +162,7 @@ def main():
                     f.write("Pretraining \n")
 
             #Pretraining
-            model = RamanNet(sp_size=1000,num_classes=30).to(device)
+            model = ScaleAdaptiveNet(num_classes=8).to(device)
             optimizer = torch.optim.Adam(model.parameters(),lr=lr)
             best_acc = 0
             best_model_name = ""
@@ -170,8 +170,8 @@ def main():
             print("Pretraining")
             for epoch in range(epochs):
                 print(f"This is Epoch {epoch}")
-                train(model,device,train_train_loader,criterion1,criterion2,optimizer)
-                acc = test(model,device,train_val_loader,criterion1)
+                train(model,device,train_train_loader,criterion,optimizer)
+                acc = test(model,device,train_val_loader,criterion)
 
                 with open(filename,"a", encoding="utf-8") as f:
                     f.write(f"This is epoch {epoch}\n")
@@ -185,7 +185,7 @@ def main():
 
                     #Saving the current model
                     best_acc = acc
-                    best_model_name = f"results/Bacteria_ID/models/model_RamanNet_{epoch}_{round(acc,2)}_.pt"
+                    best_model_name = f"results/hyperparameter_tuning/Bacteria_ID/models/model_SANet{epoch}_{round(acc,2)}_.pt"
                     torch.save(model.state_dict(),best_model_name)
                     best_epoch = epoch
                     continue
@@ -198,7 +198,7 @@ def main():
                 f.write("Finetuning \n")
 
             #Loading the pretrained model
-            pretrained_model = RamanNet(sp_size=1000,num_classes=30).to(device)
+            pretrained_model = ScaleAdaptiveNet(num_classes=8).to(device)
             pretrained_model.load_state_dict(torch.load(best_model_name))
             os.remove(best_model_name)
 
@@ -209,8 +209,8 @@ def main():
 
             for epoch in range(epochs):
                 print(f"This is Epoch {epoch}")
-                train(pretrained_model,device,fine_train_loader,criterion1,criterion2,optimizer)
-                acc = test(pretrained_model,device,fine_val_loader,criterion1)
+                train(pretrained_model,device,fine_train_loader,criterion,optimizer)
+                acc = test(pretrained_model,device,fine_val_loader,criterion)
 
                 with open(filename,"a", encoding="utf-8") as f:
                     f.write(f"This is epoch {epoch}\n")
@@ -220,7 +220,7 @@ def main():
                 if acc>best_val_acc:
                     best_val_acc = acc
                     if best_val_acc>all_best_val_acc:
-                        best_test_acc = test_f1(pretrained_model,device,test_loader,criterion1)
+                        best_test_acc = test_f1(pretrained_model,device,test_loader,criterion)
                         all_best_test_acc = copy.deepcopy(best_test_acc)
                         all_best_val_acc = best_val_acc
                         best_hyper=iteration
@@ -230,14 +230,14 @@ def main():
                             os.remove(best_final_model_name)
 
                         #Saving the current model
-                        best_final_model_name = f"results/trained_models/Bacteria_thirty_RamanNet_{epoch}_{round(acc,2)}_.pt"
+                        best_final_model_name = f"results/hyperparameter_tuning/trained_models/Bacteria_eight_SANet_{epoch}_{round(acc,2)}_.pt"
                         torch.save(pretrained_model.state_dict(),best_final_model_name)
                     
                     best_epoch = epoch
                     continue
 
                 if epoch-best_epoch>=stopping_epochs:
-                  break       
+                  break                
 
     with open(filename,"a", encoding="utf-8") as f:
         f.write(f"The best test accuracy is {round(all_best_test_acc[0],2)}\n")

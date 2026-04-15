@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torch.utils.data import Dataset,DataLoader, random_split
+from torch.utils.data import Dataset,DataLoader,random_split
 from torchvision import transforms
 
 from tqdm import tqdm
@@ -10,10 +10,12 @@ import random
 
 import numpy as np
 import matplotlib.pyplot as plt
-from models.RamanFormer import RamanFormer
+from models.RamanNet import RamanNet
+from triplet_loss import TripletLoss
 from sklearn.metrics import precision_score, recall_score, f1_score
 import os
 import copy
+
 
 class MLROD_dataset(Dataset):
   def __init__(self,path):
@@ -40,11 +42,11 @@ class MLROD_dataset(Dataset):
 
   def __getitem__(self,index):
     data = torch.Tensor(self.X[index]) #of shape (1,1024)
-    data = data/data.max()
+    data = (data-data.min())/(data.max()-data.min())
     label = self.y[index]
     return data,label
 
-def train(model,device,train_dataloader,criterion,optimizer):
+def train(model,device,train_dataloader,criterion1,criterion2,optimizer):
     model.train()
     loop = tqdm(train_dataloader)
     total_loss = 0
@@ -54,8 +56,16 @@ def train(model,device,train_dataloader,criterion,optimizer):
         X = X.to(device)
         y = y.to(device)
 
-        y_pred = model(X) #of shape (b,15)
-        loss = criterion(y_pred,y)
+        y_pred,y_emb = model(X) #of shape (b,15)
+
+        #Applying cross-entropy loss
+        ce_loss = criterion1(y_pred,y)
+
+        #Applying triplet loss
+        tr_loss = criterion2(y_emb,y)
+
+        loss = 0.5*ce_loss+0.5*tr_loss
+
         total_loss += loss.item()
         loop.set_postfix(loss=total_loss/(i+1))
 
@@ -77,7 +87,7 @@ def test(model,device,test_dataloader,criterion):
             X = X.to(device)
             y = y.to(device)
 
-            y_pred = model(X) #of shape (b,15)
+            y_pred,_ = model(X) #of shape (b,15)
             prediction = y_pred.argmax(dim=1) #of shape (b)
             correct += sum(prediction==y).item()
 
@@ -101,7 +111,7 @@ def test_f1(model,device,test_dataloader,criterion):
             X = X.to(device)
             y = y.to(device)
 
-            y_pred = model(X)#of shape (b,num_classes)                  
+            y_pred,_ = model(X)#of shape (b,num_classes)                  
             preds = y_pred.argmax(dim=1) #of shape (b)
 
             all_preds.append(preds.cpu())
@@ -126,12 +136,16 @@ def test_f1(model,device,test_dataloader,criterion):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    filename = "results/MLROD/results_RamanFormer.txt"
+    os.makedirs("results/hyperparameter_tuning/MLROD", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/trained_models/", exist_ok=True)
+    
+    filename = "results/hyperparameter_tuning/MLROD/results_RamanNet.txt"
     print(device)
 
     epochs = 40
     stopping_epochs = 10
     criterion = nn.CrossEntropyLoss()
+    criterion2 = TripletLoss(device)
     batch_sizes = [32,128,512]
     lrs = [0.001,0.0001,0.00001]
     all_best_val_acc = 0 #For validation
@@ -139,10 +153,13 @@ def main():
     best_hyper = ""
     best_final_model_name = ""
 
+    generator = torch.manual_seed(42)
+    random.seed(42)
+
     for batch_size in batch_sizes:
         for lr in lrs:
             train_set = MLROD_dataset("datasets/MLROD/MLROD_train.pkl")
-            train_train_set, train_val_set = random_split(train_set,[0.8,0.2])
+            train_train_set, train_val_set = random_split(train_set,[0.8,0.2],generator=generator)
             test_set = MLROD_dataset("datasets/MLROD/MLROD_test.pkl")
 
             train_loader = DataLoader(train_train_set, batch_size=batch_size, num_workers=8, shuffle=True)
@@ -173,7 +190,7 @@ def main():
             with open(filename,"a", encoding="utf-8") as f:
                 f.write("\n"+iteration+"\n")
 
-            model = RamanFormer().to(device)
+            model = RamanNet().to(device)
             optimizer = torch.optim.Adam(model.parameters(),lr=lr)
             best_val_acc = 0
             best_test_acc = [[],[],[],[],[]]
@@ -181,7 +198,7 @@ def main():
 
             for epoch in range(epochs):
                 print(f"This is Epoch {epoch}")
-                train(model,device,train_loader,criterion,optimizer)
+                train(model,device,train_loader,criterion,criterion2,optimizer)
                 acc = test(model,device,val_loader,criterion)  
 
                 with open(filename,"a", encoding="utf-8") as f:
@@ -206,14 +223,14 @@ def main():
                             os.remove(best_final_model_name)
 
                         #Saving the current model
-                        best_final_model_name = f"results/trained_models/MLROD_RamanFormer_{epoch}_{round(acc,2)}_.pt"
+                        best_final_model_name = f"results/hyperparameter_tuning/trained_models/MLROD_RamanNet_{epoch}_{round(acc,2)}_.pt"
                         torch.save(model.state_dict(),best_final_model_name)
 
                     best_epoch = epoch
                     continue
 
                 if epoch-best_epoch>=stopping_epochs:
-                  break           
+                  break             
 
     with open(filename,"a", encoding="utf-8") as f:
         f.write("For Granite 0\n")
@@ -248,7 +265,6 @@ def main():
 
 
         f.write(best_hyper)
-
 
 if __name__=="__main__":
     main()

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torch.utils.data import Dataset,DataLoader, random_split
+from torch.utils.data import Dataset,DataLoader,random_split
 from torchvision import transforms
 
 from tqdm import tqdm
@@ -10,7 +10,8 @@ import random
 
 import numpy as np
 import matplotlib.pyplot as plt
-from models.transformer import ViT
+from models.SANet import ScaleAdaptiveNet
+import os
 from sklearn.metrics import precision_score, recall_score, f1_score
 import os
 import copy
@@ -32,7 +33,7 @@ class Pharma_dataset(Dataset):
 
   def __getitem__(self,index):
     data = torch.Tensor(self.X[index]) #of shape (1,1024)
-    data = data/data.max()
+    data = (data-data.min())/(data.max()-data.min())
     label = self.mapping[self.y[index]]
     return data,label
 
@@ -108,9 +109,9 @@ def test_f1(model,device,test_dataloader,criterion):
     all_targets = torch.cat(all_targets).numpy() #of shape (num_samples,)
 
     accuracy = 100.0 * (all_preds == all_targets).mean()
-    precision = precision_score(all_targets, all_preds, average='weighted', zero_division=0)
-    recall = recall_score(all_targets, all_preds, average='weighted', zero_division=0)
-    f1 = f1_score(all_targets, all_preds, average='weighted', zero_division=0)
+    precision = precision_score(all_targets, all_preds, average='macro', zero_division=0)
+    recall = recall_score(all_targets, all_preds, average='macro', zero_division=0)
+    f1 = f1_score(all_targets, all_preds, average='macro', zero_division=0)
 
     print(f'Classification accuracy: {round(accuracy,2)}')
 
@@ -118,7 +119,10 @@ def test_f1(model,device,test_dataloader,criterion):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    filename = "results/Pharma/results_transformer.txt"
+    os.makedirs("results/hyperparameter_tuning/Pharma", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/trained_models/", exist_ok=True)
+    
+    filename = "results/hyperparameter_tuning/Pharma/results_SANet.txt"
     print(device)
 
     epochs = 40
@@ -127,15 +131,19 @@ def main():
     batch_sizes = [32,128,512]
     lrs = [0.001,0.0001,0.00001]
     all_best_val_acc = 0 #For validation
-    all_best_test_acc = [0,0,0,0] #For test
+    all_best_test_acc = [0,0,0,0]  #For test
     best_hyper = ""
     best_final_model_name = ""
 
+    generator = torch.manual_seed(42)
+    random.seed(42)
+
     for batch_size in batch_sizes:
         for lr in lrs:
-            train_set = Pharma_dataset("datasets/Pharma/Pharma_train.pkl")
-            val_set = Pharma_dataset("datasets/Pharma/Pharma_val.pkl")
+            all_train_set = Pharma_dataset("datasets/Pharma/Pharma_train.pkl")
             test_set = Pharma_dataset("datasets/Pharma/Pharma_test.pkl")
+
+            train_set, val_set = random_split(all_train_set,[0.8,0.2],generator=generator)
 
             train_loader = DataLoader(train_set, batch_size=batch_size, num_workers=8, shuffle=True)
             val_loader = DataLoader(val_set, batch_size=batch_size, num_workers=8, shuffle=True)
@@ -150,10 +158,10 @@ def main():
             with open(filename,"a", encoding="utf-8") as f:
                 f.write("\n"+iteration+"\n")
 
-            model = ViT(patch_size=128,p=0.1,num_classes=32).to(device)
+            model = ScaleAdaptiveNet(num_classes=32).to(device)
             optimizer = torch.optim.Adam(model.parameters(),lr=lr)
             best_val_acc = 0
-            best_test_acc = [0,0,0,0]
+            best_test_acc = [0,0,0,0] 
             best_epoch = -1
 
             for epoch in range(epochs):
@@ -179,14 +187,14 @@ def main():
                             os.remove(best_final_model_name)
 
                         #Saving the current model
-                        best_final_model_name = f"results/trained_models/Pharma_transformer_{epoch}_{round(acc,2)}_.pt"
+                        best_final_model_name = f"results/hyperparameter_tuning/trained_models/Pharma_SANet_{epoch}_{round(acc,2)}_.pt"
                         torch.save(model.state_dict(),best_final_model_name)
                     
                     best_epoch = epoch
                     continue
 
                 if epoch-best_epoch>=stopping_epochs:
-                  break            
+                  break             
 
     with open(filename,"a", encoding="utf-8") as f:
         f.write(f"The best test accuracy is {round(all_best_test_acc[0],2)}\n")
@@ -196,6 +204,6 @@ def main():
         f.write(best_hyper)
 
 
-
 if __name__=="__main__":
     main()
+

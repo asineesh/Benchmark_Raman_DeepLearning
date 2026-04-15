@@ -10,33 +10,28 @@ import random
 
 import numpy as np
 import matplotlib.pyplot as plt
-from models.mlrod import MLROD_model
+from models.RamanFormer import RamanFormer
 import os
-from datasets.Bacteria_ID.config import ATCC_GROUPINGS
 from sklearn.metrics import precision_score, recall_score, f1_score
 import copy
 
 class Bacteria_Dataset(Dataset):
-    def __init__(self,X_path,y_path,num_classes=30):
+    def __init__(self,X_path,y_path):
         """
         X_path is a string containing the path to the spectra
         y_path is a string containing the path to the labels for the spectra
-        num_classes is an integer corresponding to an 8 class or 30 class problem 
         """
         super().__init__()
         self.X = np.load(X_path)
         self.y = np.load(y_path)
-        self.num_classes = num_classes
     
     def __len__(self):
         return len(self.y)
     
     def __getitem__(self,index):
         data = torch.Tensor(self.X[index]).unsqueeze(0) #of shape (1,1000)
-        data = data/(data.max())
+        data = (data-data.min())/(data.max()-data.min())
         label = self.y[index]
-        if self.num_classes==8:
-            label = ATCC_GROUPINGS[label]
         return data,int(label)
 
 def train(model,device,train_dataloader,criterion,optimizer):
@@ -121,7 +116,11 @@ def test_f1(model,device,test_dataloader,criterion):
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    filename = "results/Bacteria_ID/eight/results_mlrod.txt"
+    os.makedirs("results/hyperparameter_tuning/Bacteria_ID/thirty/", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/Bacteria_ID/models/", exist_ok=True)
+    os.makedirs("results/hyperparameter_tuning/trained_models/", exist_ok=True)
+    
+    filename = "results/hyperparameter_tuning/Bacteria_ID/thirty/results_RamanFormer.txt""
     print(device)
 
     epochs = 40
@@ -134,14 +133,17 @@ def main():
     best_hyper = ""
     best_final_model_name = ""
 
+    generator = torch.manual_seed(42)
+    random.seed(42)
+
     for batch_size in batch_sizes:
         for lr in lrs:
-            train_set = Bacteria_Dataset("datasets/Bacteria_ID/X_reference.npy","datasets/Bacteria_ID/y_reference.npy",8)
-            fine_set = Bacteria_Dataset("datasets/Bacteria_ID/X_finetune.npy","datasets/Bacteria_ID/y_finetune.npy",8)
-            test_set = Bacteria_Dataset("datasets/Bacteria_ID/X_test.npy","datasets/Bacteria_ID/y_test.npy",8)
+            train_set = Bacteria_Dataset("datasets/Bacteria_ID/X_reference.npy","datasets/Bacteria_ID/y_reference.npy")
+            fine_set = Bacteria_Dataset("datasets/Bacteria_ID/X_finetune.npy","datasets/Bacteria_ID/y_finetune.npy")
+            test_set = Bacteria_Dataset("datasets/Bacteria_ID/X_test.npy","datasets/Bacteria_ID/y_test.npy")
 
-            train_train_set, train_val_set = random_split(train_set,[0.8,0.2])
-            fine_train_set, fine_val_set = random_split(fine_set,[0.8,0.2])
+            train_train_set, train_val_set = random_split(train_set,[0.8,0.2],generator=generator)
+            fine_train_set, fine_val_set = random_split(fine_set,[0.8,0.2],generator=generator)
 
             train_train_loader = DataLoader(train_train_set, batch_size=batch_size, num_workers=8, shuffle=True)
             train_val_loader = DataLoader(train_val_set, batch_size=batch_size, num_workers=8, shuffle=True)
@@ -156,7 +158,7 @@ def main():
                     f.write("Pretraining \n")
 
             #Pretraining
-            model = MLROD_model(sp_size=1000,num_classes=8).to(device)
+            model = RamanFormer(patch_size=125,sp_size=1000,num_classes=30,p=0.1).to(device)
             optimizer = torch.optim.Adam(model.parameters(),lr=lr)
             best_acc = 0
             best_model_name = ""
@@ -179,7 +181,7 @@ def main():
 
                     #Saving the current model
                     best_acc = acc
-                    best_model_name = f"results/Bacteria_ID/models/model_mlrod_{epoch}_{round(acc,2)}_.pt"
+                    best_model_name = f"results/hyperparameter_tuning/Bacteria_ID/models/model_RamanFormer{epoch}_{round(acc,2)}_.pt"
                     torch.save(model.state_dict(),best_model_name)
                     best_epoch = epoch
                     continue
@@ -192,7 +194,7 @@ def main():
                 f.write("Finetuning \n")
 
             #Loading the pretrained model
-            pretrained_model = MLROD_model(sp_size=1000,num_classes=8).to(device)
+            pretrained_model = RamanFormer(patch_size=125,sp_size=1000,num_classes=30,p=0.1).to(device)
             pretrained_model.load_state_dict(torch.load(best_model_name))
             os.remove(best_model_name)
 
@@ -224,14 +226,14 @@ def main():
                             os.remove(best_final_model_name)
 
                         #Saving the current model
-                        best_final_model_name = f"results/trained_models/Bacteria_eight_mlrod_{epoch}_{round(acc,2)}_.pt"
+                        best_final_model_name = f"results/hyperparameter_tuning/trained_models/Bacteria_thirty_RamanFormer_{epoch}_{round(acc,2)}_.pt"
                         torch.save(pretrained_model.state_dict(),best_final_model_name)
                     
                     best_epoch = epoch
                     continue
 
                 if epoch-best_epoch>=stopping_epochs:
-                  break         
+                  break               
 
     with open(filename,"a", encoding="utf-8") as f:
         f.write(f"The best test accuracy is {round(all_best_test_acc[0],2)}\n")
