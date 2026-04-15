@@ -153,11 +153,11 @@ def main():
     best_hyper = ""
     best_final_model_name = ""
 
-    generator = torch.manual_seed(42)
     random.seed(42)
 
     for batch_size in batch_sizes:
         for lr in lrs:
+            generator = torch.manual_seed(42)
             train_set = MLROD_dataset("datasets/MLROD/MLROD_train.pkl")
             train_train_set, train_val_set = random_split(train_set,[0.8,0.2],generator=generator)
             test_set = MLROD_dataset("datasets/MLROD/MLROD_test.pkl")

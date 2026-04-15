@@ -134,11 +134,11 @@ def main():
     best_hyper = ""
     best_final_model_name = ""
 
-    generator = torch.manual_seed(42)
     random.seed(42)
 
     for batch_size in batch_sizes:
         for lr in lrs:
+            generator = torch.manual_seed(42)
             all_train_set = Pharma_dataset("datasets/Pharma/Pharma_train.pkl")
             test_set = Pharma_dataset("datasets/Pharma/Pharma_test.pkl")
 

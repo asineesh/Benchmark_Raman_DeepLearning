@@ -149,7 +149,6 @@ def main():
     all_best_test_acc = [0,0,0,0] #For test
     best_hyper = ""
     best_final_model_name = ""
-    generator = torch.manual_seed(42)
     random.seed(42)
 
     for batch_size in batch_sizes:
@@ -157,7 +156,7 @@ def main():
             train_set = Bacteria_Dataset("datasets/Bacteria_ID/X_reference.npy","datasets/Bacteria_ID/y_reference.npy",8)
             fine_set = Bacteria_Dataset("datasets/Bacteria_ID/X_finetune.npy","datasets/Bacteria_ID/y_finetune.npy",8)
             test_set = Bacteria_Dataset("datasets/Bacteria_ID/X_test.npy","datasets/Bacteria_ID/y_test.npy",8)
-
+            generator = torch.manual_seed(42)
             train_train_set, train_val_set = random_split(train_set,[0.8,0.2],generator=generator)
             fine_train_set, fine_val_set = random_split(fine_set,[0.8,0.2],generator=generator)
 
