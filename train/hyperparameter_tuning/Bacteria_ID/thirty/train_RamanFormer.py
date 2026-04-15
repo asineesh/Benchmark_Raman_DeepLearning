@@ -120,7 +120,7 @@ def main():
     os.makedirs("results/hyperparameter_tuning/Bacteria_ID/models/", exist_ok=True)
     os.makedirs("results/hyperparameter_tuning/trained_models/", exist_ok=True)
     
-    filename = "results/hyperparameter_tuning/Bacteria_ID/thirty/results_RamanFormer.txt""
+    filename = "results/hyperparameter_tuning/Bacteria_ID/thirty/results_RamanFormer.txt"
     print(device)
 
     epochs = 40

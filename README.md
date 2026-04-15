@@ -25,7 +25,7 @@ git clone https://github.com/asineesh/Benchmark_Raman_DeepLearning/
 cd Benchmark_Raman_DeepLearning
 ```
 ### 2. Create Required Directory Structure
-Create the following empty directories
+Create the following empty directory
 ```bash
 mkdir datasets/Bacteria_ID
 ```
