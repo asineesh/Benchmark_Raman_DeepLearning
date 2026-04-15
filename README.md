@@ -8,7 +8,7 @@ This repository provides a unified benchmarking framework for evaluating multipl
 
 The following models are benchmarked under consistent training and evaluation protocols:
 
-- **Deep CNN <sup> [4] </sup>** (referred to as `mlrod` in the codebase)
+- **Deep CNN <sup> [4] </sup>** 
 - **SANet <sup> [5] </sup>**
 - **RamanNet <sup> [6] </sup>**
 - **Transformer <sup> [7] </sup>**
@@ -27,7 +27,6 @@ cd Benchmark_Raman_DeepLearning
 ### 2. Create Required Directory Structure
 Create the following empty directories
 ```bash
-mkdir results/Bacteria_ID/models
 mkdir datasets/Bacteria_ID
 ```
 
@@ -43,15 +42,13 @@ Download it from https://springernature.figshare.com/articles/dataset/Open-sourc
 Run the `explore.ipynb` notebook to generate the .pkl files for the train, validation and test splits of the dataset.
 
 ## Training Models
-To train a model on a given dataset, execute the corresponding training module located in the `results/` directory as a Python script. For example, to train the RamanNet model on the Bacteria ID dataset for the 30 category isolate classification problem, run the following from the root directory
+### 1. Finding the optimum hyperparameters
+To find the optimum hyperparameters for a specific model on a specific dataset, execute the corresponding training module located in the `train/hyperparameter_tuning` directory as a Python script. For example, to find the optimum hyperparameters for the RamanNet model on the Bacteria ID dataset for the 30 category isolate classification problem, run the following from the root directory
 
 ```bash
-python -m results.Bacteria_ID.thirty.train_RamanNet
+python -m train.hyperparameter_tuning.Bacteria_ID.thirty.train_RamanNet
 ```
-
-During training, 
-* Hyperparameter tuning is performed using the validation set.
-* The model achieving the best validation accuracy is saved to `results/trained_models/`.
+Hyperparameter tuning is performed using the validation set. The model achieving the best validation accuracy is saved to `results/hyperparameter_tuning/trained_models/`.
 
 
 ## Evaluation 
