@@ -7,6 +7,7 @@ __pycache__/
 *.txt
 *.npy
 *.pdf
+*.sh
 config.py
 preprocessing.ipynb
 plot_samples.ipynb
