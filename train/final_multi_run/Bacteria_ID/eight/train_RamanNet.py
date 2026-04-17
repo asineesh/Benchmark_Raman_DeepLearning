@@ -247,7 +247,7 @@ def main():
                 torch.cuda.synchronize()
             start_epoch_time = time.time()
 
-            train(pretrained_model,device,train_train_loader,criterion,criterion2,optimizer)
+            train(pretrained_model,device,fine_train_loader,criterion,criterion2,optimizer)
 
             if device.type == "cuda":
                 torch.cuda.synchronize()

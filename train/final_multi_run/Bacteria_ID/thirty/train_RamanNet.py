@@ -247,7 +247,7 @@ def main():
                 torch.cuda.synchronize()
             start_epoch_time = time.time()
 
-            train(pretrained_model,device,train_train_loader,criterion,criterion2,optimizer)
+            train(pretrained_model,device,fine_train_loader,criterion,criterion2,optimizer)
 
             if device.type == "cuda":
                 torch.cuda.synchronize()
@@ -269,7 +269,7 @@ def main():
                     os.remove(best_final_model_name)
 
                 #Saving the current model
-                best_final_model_name = f"results/final_multi_run/trained_models/Bacteria_ID_thirty_fine_{run}_{epoch}_{round(acc,2)}_.pt"
+                best_final_model_name = f"results/final_multi_run/trained_models/Bacteria_ID_thirty_RamanNet_fine_{run}_{epoch}_{round(acc,2)}_.pt"
                 torch.save(pretrained_model.state_dict(),best_final_model_name)
             
                 best_epoch = epoch
