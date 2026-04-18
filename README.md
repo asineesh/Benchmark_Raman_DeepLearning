@@ -50,9 +50,17 @@ python -m train.hyperparameter_tuning.Bacteria_ID.thirty.train_RamanNet
 ```
 Hyperparameter tuning is performed using the validation set. The model achieving the best validation accuracy is saved to `results/hyperparameter_tuning/trained_models/`.
 
+### 2. Running multiple trials for statistical evaluation
+To obtain the final results for a specific model on a specific dataset across multiple runs, execute the corresponding training module located in the  `train/final_multi_run/` directory as a Python script. For example, to train the RamanNet model on the Bacteria ID dataset for the 30 category isolate classification problem using a learning rate of 0.001, batch size of 32 and for 5 runs, execute the following from the root directory
+
+```bash
+python -m train.final_multi_run.Bacteria_ID.thirty.train_RamanNet --batch_size 32 --learning_rate 0.001 --runs 5
+```
+The default value for these arguments are the optimal hyperparameters that we obtained. The model achieving the best validation accuracy is saved to `results/final_multi_run/trained_models/`.
+
 
 ## Evaluation 
-To compute test accuracy and macro F1 score, run the corresponding evaluation notebooks located in `results/trained_models/`. <br> <br>
+To compute test accuracy and macro F1 score aggregated across runs, execute the corresponding evaluation notebooks located in `results/analysis/acc_calc/trained_models/`. <br> <br>
 Ensure that the paths to the trained model checkpoints are updated appropriately before running the notebooks.
 
 ## Citations
