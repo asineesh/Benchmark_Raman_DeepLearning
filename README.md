@@ -8,6 +8,8 @@ This repository provides a unified benchmarking framework for evaluating multipl
 
 The following models are benchmarked under consistent training and evaluation protocols:
 
+-**Support Vector Classifier**
+-**Random Forest**
 - **Deep CNN <sup> [4] </sup>** 
 - **SANet <sup> [5] </sup>**
 - **RamanNet <sup> [6] </sup>**
