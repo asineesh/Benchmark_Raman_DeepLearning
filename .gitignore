@@ -9,6 +9,7 @@ __pycache__/
 *.pdf
 *.sh
 *.tar.gz
+*.png
 config.py
 preprocessing.ipynb
 plot_samples.ipynb
